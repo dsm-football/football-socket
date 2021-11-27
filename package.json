@@ -4,7 +4,7 @@
   "description": "football socket",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --exec ts-node src/app.ts",
+    "start": "nodemon --exec ts-node src/index.ts",
     "start:prod": "cross-env NODE_ENV=production npx pm2 start ./dist/src/app.js --name express",
     "stop": "npx pm2 stop express & npx pm2 delete express"
   },
@@ -23,12 +23,14 @@
     "@types/dotenv": "^8.2.0",
     "@types/express": "^4.17.13",
     "@types/jsonwebtoken": "^8.5.6",
+    "@types/mysql2": "github:types/mysql2",
     "@types/socket.io": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^8.6.0",
     "express": "^4.17.1",
     "http": "*",
     "jsonwebtoken": "^8.5.1",
+    "mysql2": "^2.3.3",
     "socket.io": "^4.3.2",
     "typeorm": "^0.2.40"
   }
