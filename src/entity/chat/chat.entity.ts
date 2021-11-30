@@ -22,9 +22,9 @@ export class Chat {
 
   @ManyToOne(() => Room, (room) => room.chats)
   @JoinColumn({ name: 'room_id' })
-  room: Room;
+  room: number;
 
   @ManyToOne(() => User, (user) => user.chats)
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user: number;
 }
