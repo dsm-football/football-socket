@@ -2,9 +2,9 @@
   "name": "football-socket",
   "version": "1.0.0",
   "description": "football socket",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "start": "nodemon --exec ts-node src/index.ts",
+    "start": "nodemon --exec ts-node src/app.ts",
     "start:prod": "cross-env NODE_ENV=production npx pm2 start ./dist/src/app.js --name express",
     "stop": "npx pm2 stop express & npx pm2 delete express"
   },
@@ -19,12 +19,14 @@
   },
   "homepage": "https://github.com/dsm-football/football-socket#readme",
   "dependencies": {
+    "@types/amqplib": "^0.8.2",
     "@types/cors": "^2.8.12",
     "@types/dotenv": "^8.2.0",
     "@types/express": "^4.17.13",
     "@types/jsonwebtoken": "^8.5.6",
     "@types/mysql2": "github:types/mysql2",
     "@types/socket.io": "^3.0.2",
+    "amqplib": "^0.8.0",
     "cors": "^2.8.5",
     "dotenv": "^8.6.0",
     "express": "^4.17.1",
