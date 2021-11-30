@@ -1,5 +1,5 @@
 export class CreateRoomRequestDto {
-  roomId: number;
-  hostUserId: number;
-  userId: number;
+  room_id: number;
+  host_user_id: number;
+  user_id: number;
 }

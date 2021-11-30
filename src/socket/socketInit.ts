@@ -36,7 +36,7 @@ export default class SocketInit {
 
     io.on('connect', (socket: Socket) => {
       socket.on(Event.CREATE_ROOM, async (dto: CreateRoomRequestDto) => {
-        const roomId = dto.roomId;
+        const roomId = dto.room_id;
         console.log(roomId);
         const fanoutRoomName = 'room.fanout.' + roomId;
         const queueName = 'room.' + roomId;
