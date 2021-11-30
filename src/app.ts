@@ -1,52 +1,45 @@
-import * as express from 'express';
-import * as cors from 'cors';
+import express from 'express';
 import { Application, Request, Response, NextFunction } from 'express';
-import { createServer, Server } from 'http';
-import { Server as IO } from 'socket.io';
+import cors from 'cors';
 import router from './routes';
 import { ApiNotFoundError } from './error/errorCode';
 import { errorHandler } from './middleware/errorHandler';
-import socketInit from './socket/index';
+import { createConnection } from 'typeorm';
+import option from './config/ormconfig';
+import { connectRabbitMQ } from './config/rabbitmq';
+import { serverPort } from './config/secret';
+import { Server } from 'socket.io';
+import SocketInit from './socket/socketInit';
+const app: Application = express();
 
-class App {
-  private app: Application;
-  private httpServer: Server;
-  private io: IO;
+createConnection(option)
+  .then(async () => {
+    await connectRabbitMQ();
+  })
+  .catch(console.error);
 
-  constructor() {
-    this.createApp();
-  }
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cors());
 
-  private createApp(): void {
-    this.app = express.default();
-    this.app.use(express.json());
-    this.app.use(express.urlencoded({ extended: false }));
-    this.app.use(cors.default());
+app.use('/', router);
 
-    this.app.use('/', router);
+app.use((req: Request, res: Response, next: NextFunction) => {
+  next(ApiNotFoundError);
+});
+app.use(errorHandler);
 
-    this.app.use((req: Request, res: Response, next: NextFunction) => {
-      next(ApiNotFoundError);
-    });
+const server = app.listen(serverPort, () => {
+  console.log(`Server running on port ${serverPort}`);
+  socketServer();
+});
 
-    this.app.use(errorHandler);
-  }
-
-  private createServer(port: number): void {
-    this.httpServer = createServer(this.app);
-    this.httpServer.listen(port);
-  }
-
-  private socket() {
-    this.io = require('socket.io')(this.httpServer, { origin: '*:*' });
-    socketInit(this.io);
-  }
-
-  public listen(port: number, callback: () => void) {
-    this.createServer(port);
-    this.socket();
-    callback();
-  }
-}
-
-export default new App();
+const socketServer = () => {
+  const socketApp = new SocketInit();
+  const io = new Server(server, {
+    cors: {
+      origin: '*',
+    },
+  });
+  socketApp.start(io);
+};
