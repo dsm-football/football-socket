@@ -35,11 +35,14 @@ export default class SocketInit {
     });
 
     io.on('connect', (socket: Socket) => {
+      console.log('이진우 제발 들어와');
       socket.on(Event.CREATE_ROOM, async (dto: CreateRoomRequestDto) => {
         const roomId = dto.room_id;
         console.log(roomId);
         const fanoutRoomName = 'room.fanout.' + roomId;
-        const queueName = 'room.' + roomId;
+        const hostUserQueueName =
+          'room.' + roomId + '.user.' + dto.host_user_id;
+        const userQueueName = 'room.' + roomId + '.user.' + dto.user_id;
         await amqpClient.assertExchange(fanoutRoomName, 'fanout', {
           durable: true,
         });
@@ -50,20 +53,26 @@ export default class SocketInit {
           fanoutRoomName,
         );
 
-        await amqpClient.assertQueue(queueName, {
+        await amqpClient.assertQueue(hostUserQueueName, {
           durable: true,
         });
 
-        amqpClient.bindQueue(queueName, fanoutRoomName, fanoutRoomName);
+        await amqpClient.assertQueue(userQueueName, {
+          durable: true,
+        });
+
+        amqpClient.bindQueue(hostUserQueueName, fanoutRoomName, fanoutRoomName);
+        amqpClient.bindQueue(userQueueName, fanoutRoomName, fanoutRoomName);
       });
 
       socket.on(Event.SEND_MESSAGE, async (dto: SendMessageRequestDto) => {
         const chatRepository = getCustomRepository(ChatRepository);
         const message = dto.message;
+        const fanoutRoomName = 'room.fanout.' + dto.room_id;
 
         amqpClient.publish(
           directExchangeName,
-          'room.fanout.1',
+          fanoutRoomName,
           Buffer.from(message),
         );
 
