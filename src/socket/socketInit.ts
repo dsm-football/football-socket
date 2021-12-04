@@ -9,6 +9,7 @@ import { CreateRoomRequestDto } from './dto/request/create-room.dto';
 import { SendMessageRequestDto } from './dto/request/send-message.dto';
 import { getCustomRepository } from 'typeorm';
 import { ChatRepository } from '../entity/chat/chat.repository';
+import { UserRepository } from '../entity/user/user.repository';
 
 export default class SocketInit {
   public async start(io: Server) {
@@ -20,7 +21,10 @@ export default class SocketInit {
         if (splitToken[0] !== 'Bearer') throw UnauthorizedError;
         const payload = jwt.verify(splitToken[1], JwtSecret) as jwt.JwtPayload;
         if (payload.type !== 'access') return UnauthorizedError;
-        socket.request.user = payload;
+        const userRepository = getCustomRepository(UserRepository);
+        socket.request.user = await userRepository.findOne({
+          email: payload.sub,
+        });
         next();
       } catch (e) {
         console.log(e);
@@ -34,7 +38,7 @@ export default class SocketInit {
       }
     });
 
-    io.on('connect', (socket: Socket) => {
+    io.on('connect', (socket: any) => {
       console.log('이진우 제발 들어와');
       socket.on(Event.CREATE_ROOM, async (dto: CreateRoomRequestDto) => {
         const roomId = dto.room_id;
@@ -69,6 +73,8 @@ export default class SocketInit {
         const chatRepository = getCustomRepository(ChatRepository);
         const message = dto.message;
         const fanoutRoomName = 'room.fanout.' + dto.room_id;
+        const queueName =
+          'room.' + dto.room_id + '.user.' + socket.request.user;
 
         amqpClient.publish(
           directExchangeName,
@@ -77,16 +83,27 @@ export default class SocketInit {
         );
 
         const chat = await chatRepository.postChat(dto);
+        amqpClient.consume(
+          queueName,
+          (msg) => {
+            console.log(
+              " [x] %s : '%s",
+              msg.fields.routingKey,
+              msg.content.toString(),
+            );
+          },
+          { noAck: true },
+        );
         socket.emit(Event.RECEIVE_MESSAGE, chat);
-        console.log(chat);
       });
 
       socket.on(Event.GET_MESSAGE, (getMessageRequest: any) => {
         const roomId = getMessageRequest.roomId;
-        console.log(roomId);
+        const queueName = 'room.' + roomId + '.user.' + socket.request.user;
+        console.log(queueName);
 
         amqpClient.consume(
-          'room.' + roomId,
+          queueName,
           (msg) => {
             console.log(
               " [x] %s :'%s'",
