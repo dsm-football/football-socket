@@ -22,9 +22,10 @@ export default class SocketInit {
         const payload = jwt.verify(splitToken[1], JwtSecret) as jwt.JwtPayload;
         if (payload.type !== 'access') return UnauthorizedError;
         const userRepository = getCustomRepository(UserRepository);
-        socket.request.user = await userRepository.findOne({
+        const user = await userRepository.findOne({
           email: payload.sub,
         });
+        socket.request.user = user.id;
         next();
       } catch (e) {
         console.log(e);
