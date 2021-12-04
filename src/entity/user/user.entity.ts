@@ -26,7 +26,7 @@ export class User {
   bio: string;
 
   @Column()
-  club_nack_num: number;
+  club_back_num: number;
 
   @OneToMany(() => Room, (room) => room.host_user)
   host_rooms: Room[];
