@@ -84,7 +84,7 @@ export default class SocketInit {
           Buffer.from(message),
         );
 
-        const chat = await chatRepository.postChat(dto);
+        await chatRepository.postChat(dto);
         amqpClient.consume(
           queueName,
           (msg) => {
