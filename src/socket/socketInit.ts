@@ -1,5 +1,5 @@
 import { NextFunction } from 'express';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { directExchangeName, amqpClient } from '../config/rabbitmq';
 import { UnauthorizedError } from '../error/error';
 import { Event } from './enum/event';
@@ -10,10 +10,11 @@ import { SendMessageRequestDto } from './dto/request/send-message.dto';
 import { getCustomRepository } from 'typeorm';
 import { ChatRepository } from '../entity/chat/chat.repository';
 import { UserRepository } from '../entity/user/user.repository';
+import ISocket from './interface/socket.interface';
 
 export default class SocketInit {
   public async start(io: Server) {
-    io.use(async (socket: any, next: NextFunction) => {
+    io.use(async (socket: ISocket, next: NextFunction) => {
       try {
         const token: string = socket.handshake.query.token as string;
         if (!token) throw UnauthorizedError;
@@ -25,7 +26,7 @@ export default class SocketInit {
         const user = await userRepository.findOne({
           email: payload.sub,
         });
-        socket.request.user = user.id;
+        socket.user = user.id;
         next();
       } catch (e) {
         console.log(e);
@@ -39,7 +40,7 @@ export default class SocketInit {
       }
     });
 
-    io.on('connect', (socket: any) => {
+    io.on('connect', (socket: ISocket) => {
       console.log('이진우 제발 들어와');
       socket.on(Event.CREATE_ROOM, async (dto: CreateRoomRequestDto) => {
         const roomId = dto.room_id;
@@ -68,14 +69,14 @@ export default class SocketInit {
 
         amqpClient.bindQueue(hostUserQueueName, fanoutRoomName, fanoutRoomName);
         amqpClient.bindQueue(userQueueName, fanoutRoomName, fanoutRoomName);
+        socket.join(fanoutRoomName);
       });
 
       socket.on(Event.SEND_MESSAGE, async (dto: SendMessageRequestDto) => {
         const chatRepository = getCustomRepository(ChatRepository);
         const message = dto.message;
         const fanoutRoomName = 'room.fanout.' + dto.room_id;
-        const queueName =
-          'room.' + dto.room_id + '.user.' + socket.request.user;
+        const queueName = 'room.' + dto.room_id + '.user.' + socket.user;
 
         amqpClient.publish(
           directExchangeName,
@@ -95,12 +96,12 @@ export default class SocketInit {
           },
           { noAck: true },
         );
-        socket.emit(Event.RECEIVE_MESSAGE, chat);
+        socket.broadcast.in(fanoutRoomName).emit(Event.CHECK_MESSAGE);
       });
 
       socket.on(Event.GET_MESSAGE, (getMessageRequest: any) => {
         const roomId = getMessageRequest.roomId;
-        const queueName = 'room.' + roomId + '.user.' + socket.request.user;
+        const queueName = 'room.' + roomId + '.user.' + socket.user;
         console.log(queueName);
 
         amqpClient.consume(
@@ -111,6 +112,9 @@ export default class SocketInit {
               msg.fields.routingKey,
               msg.content.toString(),
             );
+            io.to(socket.id).emit(Event.RECEIVE_MESSAGE, {
+              message: msg.content.toString(),
+            });
           },
           { noAck: true },
         );

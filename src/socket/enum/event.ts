@@ -3,4 +3,5 @@ export enum Event {
   SEND_MESSAGE = 'send.message',
   GET_MESSAGE = 'get.message',
   RECEIVE_MESSAGE = 'receive.message',
+  CHECK_MESSAGE = 'check.message',
 }
