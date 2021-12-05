@@ -100,7 +100,7 @@ export default class SocketInit {
       });
 
       socket.on(Event.GET_MESSAGE, (getMessageRequest: any) => {
-        const roomId = getMessageRequest.roomId;
+        const roomId = getMessageRequest.roomd_id;
         const queueName = 'room.' + roomId + '.user.' + socket.user;
         console.log(queueName);
 
