@@ -108,11 +108,11 @@ export default class SocketInit {
           queueName,
           (msg) => {
             console.log(
-              " [x] %s :'%s'",
+              " receive [x] %s :'%s'",
               msg.fields.routingKey,
               msg.content.toString(),
             );
-            io.to(socket.id).emit(Event.RECEIVE_MESSAGE, {
+            socket.emit(Event.RECEIVE_MESSAGE, {
               message: msg.content.toString(),
             });
           },
